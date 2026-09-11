@@ -39,3 +39,5 @@ python -m src.eda.<스크립트명>
 - `종합프로젝트 초안.md` — 기획 원문. 차별점·아키텍처·일정·로드맵·EDA 항목
 - `CLAUDE.md` — 프로젝트 개요·폴더 구조·작업 규칙 (요약)
 - `docs/interfaces.md` — 단계 간 입출력(JSON) 정의
+- `docs/decisions.md` — 결정 기록 (무엇을 왜 택했고 무엇을 기각했는지)
+- `docs/market.md` — 경쟁 서비스·사업화 검토
