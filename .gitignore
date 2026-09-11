@@ -18,3 +18,11 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# 환경 변수 (web/, api/ 포함)
+.env.*
+!.env.example
+
+# Node (web/)
+node_modules/
+.next/
