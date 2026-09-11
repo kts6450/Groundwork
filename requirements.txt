@@ -1,0 +1,9 @@
+# Python 3.11+
+pandas>=2.2
+pyarrow>=15
+pyproj>=3.6
+openpyxl>=3.1
+chardet>=5
+# notebooks/ 탐색용
+notebook>=7
+# geopandas는 공간 조인 단계에서 추가
