@@ -7,3 +7,6 @@ chardet>=5
 # notebooks/ 탐색용
 notebook>=7
 # geopandas는 공간 조인 단계에서 추가
+
+# 테스트
+pytest>=8

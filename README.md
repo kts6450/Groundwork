@@ -28,11 +28,13 @@ pip install -r requirements.txt
 
 ### 3. EDA
 
+프로젝트 루트에서:
+
 ```powershell
-python -m src.eda.<스크립트명>
+python -m src.eda
 ```
 
-결과는 `reports/eda.md`에 정리한다.
+원본만 다시 parquet로 바꿀 때는 `python -m src.eda.convert`, 항목별 재계산과 보고서는 `python -m src.eda.run_all`이다. 결과는 `reports/eda.md`다.
 
 ## 문서
 
