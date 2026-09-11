@@ -103,3 +103,14 @@ def score_crs(samples: list[dict], crs: str) -> dict:
         "in_korea": in_korea,
         "median_km_to_sido": median_km,
     }
+
+
+def parse_sido_sgg_series(address: "pd.Series") -> "pd.DataFrame":
+    """parse_sido_sgg의 벡터 버전. 컬럼 sido, sgg (실패 시 빈 문자열)."""
+    import pandas as pd  # noqa: PLC0415 - eda 모듈은 pyproj만 필수 의존
+
+    text = address.astype("string").str.strip()
+    parts = text.str.extract(_SIDO_RE.pattern)
+    out = pd.DataFrame({"sido": parts["sido"].fillna(""), "sgg": parts["sgg"].fillna("")})
+    out.loc[out["sido"] == "세종특별자치시", "sgg"] = ""
+    return out

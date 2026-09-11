@@ -41,7 +41,8 @@
 **1주 차 EDA 완료. 한 달 목표는 검증기(주소·업태 → 합격/주의/위험).** 점수·API·화면은 아직 만들지 않는다.
 
 - 완료: 작업 1 초기 세팅, 작업 2 EDA (`src/eda/`, `reports/eda.md`, 2026-09-11)
-- **다음 할 일: 2주 차 생존표.** 시군구 × 업태, n<10 제외, 3년 생존. 행정동은 경계 파일이 생기면 올린다.
+- 진행 중: 2주 차 생존표. `src/scoring/`에 업종 매핑(categories.py)·코호트/생존표(survival.py)·실행(run_survival.py)·보고서(report_survival.py) 작성, 테스트 30개 통과. **실데이터 실행은 아직 안 함**
+- **다음 할 일:** `python -m src.scoring.run_survival` 실행 → `reports/categories.md`의 판단 사항 검토 → `reports/survival.md`의 등급 기준 제안 확정 → 검증기 함수(주소·업태 → 합격/주의/위험)
 
 ## 폴더 구조
 
@@ -58,7 +59,7 @@
 ├─ notebooks/      # 탐색용 노트북
 ├─ src/            # 분석·생성 로직 (화면·API 독립)
 │  ├─ eda/         # EDA 스크립트
-│  ├─ scoring/     # 1단계 (3주차~, 아직 없음)
+│  ├─ scoring/     # 1단계 업종 매핑·생존표·검증기
 │  ├─ concept/     # 2단계 (6주차~, 아직 없음)
 │  ├─ branding/    # 3단계 (6주차~, 아직 없음)
 │  └─ monitor/     # 5단계 (10주차~, 아직 없음)

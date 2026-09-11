@@ -23,3 +23,23 @@ def test_transform_xy_5174_puts_myeongnyun_in_seoul() -> None:
 
 def test_within_korea_rejects_outliers() -> None:
     assert within_korea(0.0, 0.0) is False
+
+
+def test_parse_sido_sgg_series_matches_scalar() -> None:
+    import pandas as pd
+
+    from src.eda.coords import parse_sido_sgg_series
+
+    addresses = pd.Series(
+        [
+            "서울특별시 종로구 창경궁로 109",
+            "경기도 성남시 분당구 정자로 1",
+            "세종특별자치시 한솔동 123",
+            "이상한 주소",
+            None,
+        ]
+    )
+    out = parse_sido_sgg_series(addresses)
+
+    assert out["sido"].tolist() == ["서울특별시", "경기도", "세종특별자치시", "", ""]
+    assert out["sgg"].tolist() == ["종로구", "성남시 분당구", "", "", ""]
