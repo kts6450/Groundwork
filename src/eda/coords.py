@@ -40,11 +40,53 @@ CITY_CENTROIDS = {
 
 _SIDO_RE = re.compile(
     r"^(?P<sido>서울특별시|부산광역시|대구광역시|인천광역시|광주광역시|"
-    r"대전광역시|울산광역시|세종특별자치시|경기도|강원특별자치도|강원도|"
+    r"대전광역시|울산광역시|세종특별자치시|전남광주통합특별시|경기도|강원특별자치도|강원도|"
     r"충청북도|충청남도|전북특별자치도|전라북도|전라남도|경상북도|경상남도|"
     r"제주특별자치도|제주도)"
     r"(?:\s+(?P<sgg>[가-힣]+시(?:\s+[가-힣]+구)?|[가-힣]+구|[가-힣]+군))?"
 )
+
+_GWANGJU_GU = frozenset({"동구", "서구", "남구", "북구", "광산구"})
+
+# 일반구가 있는 시만 시+구를 남긴다. '유구읍'·'행구동'처럼 구로 끝나는 읍·동은 시로 되돌린다.
+# 화성 동탄·만세·병점·효행은 인허가 주소에 구 표기가 있어 인정한다.
+GENERAL_GU: dict[str, frozenset[str]] = {
+    "수원시": frozenset({"장안구", "권선구", "팔달구", "영통구"}),
+    "성남시": frozenset({"수정구", "중원구", "분당구"}),
+    "안양시": frozenset({"만안구", "동안구"}),
+    "안산시": frozenset({"상록구", "단원구"}),
+    "고양시": frozenset({"덕양구", "일산동구", "일산서구"}),
+    "용인시": frozenset({"처인구", "기흥구", "수지구"}),
+    "부천시": frozenset({"원미구", "소사구", "오정구"}),
+    "청주시": frozenset({"상당구", "서원구", "흥덕구", "청원구"}),
+    "천안시": frozenset({"동남구", "서북구"}),
+    "전주시": frozenset({"완산구", "덕진구"}),
+    "포항시": frozenset({"남구", "북구"}),
+    "창원시": frozenset({"의창구", "성산구", "마산합포구", "마산회원구", "진해구"}),
+    "화성시": frozenset({"동탄구", "만세구", "병점구", "효행구"}),
+}
+
+
+def _collapse_false_gu(sgg: str) -> str:
+    if "시 " not in sgg:
+        return sgg
+    city, _, rest = sgg.partition(" ")
+    allowed = GENERAL_GU.get(city)
+    if allowed is None or rest not in allowed:
+        return city
+    return sgg
+
+
+def _normalize_parsed(sido: str, sgg: str) -> tuple[str, str]:
+    if sido == "세종특별자치시":
+        return (sido, "")
+    if sido == "전남광주통합특별시":
+        if sgg in _GWANGJU_GU:
+            return ("광주광역시", sgg)
+        if sgg:
+            return ("전라남도", _collapse_false_gu(sgg))
+        return ("", "")
+    return (sido, _collapse_false_gu(sgg))
 
 
 def parse_sido_sgg(address: str | None) -> tuple[str, str]:
@@ -53,11 +95,7 @@ def parse_sido_sgg(address: str | None) -> tuple[str, str]:
     match = _SIDO_RE.match(address.strip())
     if not match:
         return ("", "")
-    sido = match.group("sido")
-    sgg = match.group("sgg") or ""
-    if sido == "세종특별자치시":
-        return (sido, "")
-    return (sido, sgg)
+    return _normalize_parsed(match.group("sido"), match.group("sgg") or "")
 
 
 def transform_xy(x: float, y: float, crs: str) -> tuple[float, float]:
@@ -110,7 +148,17 @@ def parse_sido_sgg_series(address: "pd.Series") -> "pd.DataFrame":
     import pandas as pd  # noqa: PLC0415 - eda 모듈은 pyproj만 필수 의존
 
     text = address.astype("string").str.strip()
-    parts = text.str.extract(_SIDO_RE.pattern)
+    parts = text.str.extract(_SIDO_RE)
     out = pd.DataFrame({"sido": parts["sido"].fillna(""), "sgg": parts["sgg"].fillna("")})
+    gwangju = out["sido"].eq("전남광주통합특별시") & out["sgg"].isin(_GWANGJU_GU)
+    jeonnam = out["sido"].eq("전남광주통합특별시") & ~out["sgg"].isin(_GWANGJU_GU) & (out["sgg"] != "")
+    unknown = out["sido"].eq("전남광주통합특별시") & (out["sgg"] == "")
     out.loc[out["sido"] == "세종특별자치시", "sgg"] = ""
+    out.loc[gwangju, "sido"] = "광주광역시"
+    out.loc[jeonnam, "sido"] = "전라남도"
+    out.loc[unknown, ["sido", "sgg"]] = ""
+    has_city_gu = out["sgg"].str.contains("시 ", na=False)
+    if has_city_gu.any():
+        collapsed = out.loc[has_city_gu, "sgg"].map(_collapse_false_gu)
+        out.loc[has_city_gu, "sgg"] = collapsed
     return out

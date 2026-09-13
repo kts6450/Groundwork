@@ -29,8 +29,8 @@
 | 층 | 선택 | 시작 시점 |
 |---|---|---|
 | 분석·생성 로직 | Python 패키지 `src/` (화면·API 독립) | 지금 |
-| 백엔드 | FastAPI `api/` | 8주차 |
-| 프론트 | Next.js `web/` + Kakao Maps | 8주차 |
+| 백엔드 | FastAPI `api/` | 3주차 (화면용으로 당김) |
+| 프론트 | Next.js `web/` (지도는 나중에) | 3주차 |
 | 인증·DB | Supabase | 10주차 |
 | LLM | Claude API | 6주차 |
 
@@ -38,11 +38,10 @@
 
 ## 현재 단계
 
-**1주 차 EDA 완료. 한 달 목표는 검증기(주소·업태 → 합격/주의/위험).** 점수·API·화면은 아직 만들지 않는다.
+**3주 차: 검증 화면.** 주소·업태 → 합격/주의/위험. AI 해설은 4주 차, 그 숫자의 아래만.
 
-- 완료: 작업 1 초기 세팅, 작업 2 EDA (`src/eda/`, `reports/eda.md`, 2026-09-11)
-- 진행 중: 2주 차 생존표. `src/scoring/`에 업종 매핑(categories.py)·코호트/생존표(survival.py)·실행(run_survival.py)·보고서(report_survival.py) 작성, 테스트 30개 통과. **실데이터 실행은 아직 안 함**
-- **다음 할 일:** `python -m src.scoring.run_survival` 실행 → `reports/categories.md`의 판단 사항 검토 → `reports/survival.md`의 등급 기준 제안 확정 → 검증기 함수(주소·업태 → 합격/주의/위험)
+- 완료: 작업 1 초기 세팅, 작업 2 EDA, 2주 차 생존표·검증 함수, 3주 차 FastAPI + Next.js 검증 화면 (`api/`, `web/`)
+- **다음 할 일:** 4주 차 AI 해설. 생존 숫자를 우회하지 않고 리포트 아래에만.
 
 ## 폴더 구조
 
@@ -63,8 +62,8 @@
 │  ├─ concept/     # 2단계 (6주차~, 아직 없음)
 │  ├─ branding/    # 3단계 (6주차~, 아직 없음)
 │  └─ monitor/     # 5단계 (10주차~, 아직 없음)
-├─ api/            # FastAPI (8주차~, 아직 없음)
-├─ web/            # Next.js (8주차~, 아직 없음)
+├─ api/            # FastAPI. /catalog, /verify
+├─ web/            # Next.js 검증 화면 (남음)
 ├─ reports/        # eda.md, backtest.md 등 분석 결과 문서
 └─ docs/           # interfaces.md 등 설계 문서
 ```

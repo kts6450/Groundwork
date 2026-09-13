@@ -10,3 +10,7 @@ notebook>=7
 
 # 테스트
 pytest>=8
+
+# 8주차 예정이었으나 3주 차 화면을 위해 당김
+fastapi>=0.115
+uvicorn>=0.32

@@ -6,8 +6,8 @@
 ## 구조
 
 - `src/` — 분석·생성 로직 (Python). 화면·API를 모른다
-- `api/` — FastAPI. `src/`를 엔드포인트로 노출 (8주차부터)
-- `web/` — Next.js + Kakao Maps (8주차부터)
+- `api/` — FastAPI. `src/`를 엔드포인트로 노출
+- `web/` — Next.js 검증 화면 (제품명 남음). 지도는 나중에
 - 인증·DB는 Supabase, LLM은 Claude API
 
 ## 실행 방법
@@ -35,6 +35,31 @@ python -m src.eda
 ```
 
 원본만 다시 parquet로 바꿀 때는 `python -m src.eda.convert`, 항목별 재계산과 보고서는 `python -m src.eda.run_all`이다. 결과는 `reports/eda.md`다.
+
+### 4. 생존표·검증
+
+```powershell
+python -m src.scoring
+python -m src.scoring.verify "서울특별시 종로구 대학로11길 22" "커피숍"
+```
+
+생존표는 `reports/survival.md`, 업종 매핑은 `reports/categories.md`다.
+
+### 5. 검증 화면
+
+터미널 두 개. 가상환경은 루트에서.
+
+```powershell
+uvicorn api.main:app --reload --port 8000
+```
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+브라우저에서 `http://localhost:3000`. `/backend/*`는 Next가 FastAPI로 넘긴다.
 
 ## 문서
 
