@@ -39,7 +39,6 @@ def explain(result: dict) -> str:
     if error:
         return "이 조건으로는 생존률을 계산하지 못했다."
 
-    place = f"{result.get('sido') or ''} {result.get('sgg') or ''}".strip() or "전국"
     category = result["category"]
     eun = _topic_particle(category)
     local = f"{result['surv_3y'] * 100:.1f}"
@@ -47,11 +46,31 @@ def explain(result: dict) -> str:
     n = result["n"]
     level = result["level"]
     grade = result["grade"]
+    place = _place(result, level)
+
+    # 전국으로 내려간 경우 비교 대상이 자기 자신이라 '전국보다 높다'가 성립하지 않는다.
+    if level == "전국":
+        asked = f"{result.get('sido') or ''} {result.get('sgg') or ''}".strip()
+        where = f"{asked}에는" if asked else "요청한 지역에는"
+        return f"{where} 표본이 부족해 전국 값으로 답한다. 전국 {category} 3년 생존 {local}%, 표본 {n:,}곳."
+
+    tail = f"{level} 표본 {n:,}곳."
     if grade == "합격":
-        return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)보다 높다. {level} 표본 {n:,}곳."
+        return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)보다 높다. {tail}"
     if grade == "위험":
-        return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)보다 낮다. {level} 표본 {n:,}곳."
-    return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)과 비슷하다. {level} 표본 {n:,}곳."
+        return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)보다 낮다. {tail}"
+    return f"{place} {category}{eun} 3년 생존 {local}%로 전국({nation}%)과 비슷하다. {tail}"
+
+
+def _place(result: dict, level: str) -> str:
+    """표가 실제로 답한 범위. 시도로 내려갔는데 시군구 이름을 붙이면 오해를 부른다."""
+    sido = result.get("sido") or ""
+    sgg = result.get("sgg") or ""
+    if level == "시군구":
+        return f"{sido} {sgg}".strip()
+    if level == "시도":
+        return sido
+    return "전국"
 
 
 def _topic_particle(word: str) -> str:

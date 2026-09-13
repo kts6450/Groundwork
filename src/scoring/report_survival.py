@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from src.scoring.audit import RETIRED_MAX_RECENT, UsageRow
 from src.scoring.categories import CATEGORIES, EXCLUDE, JUDGMENT_NOTES
 from src.scoring.survival import CohortSpec
 
@@ -17,7 +18,7 @@ DROP_LABELS = {
     "region_unparsed": "주소에서 시도·시군구를 못 읽음 (시도·시군구 표에서만 제외)",
 }
 
-EXAMPLE_CATEGORIES = ("카페", "한식", "치킨", "주점")
+EXAMPLE_CATEGORIES = ("카페", "한식", "치킨·호프", "고기구이")
 EXAMPLE_MIN_N = 30
 
 
@@ -50,7 +51,63 @@ def _rate_cols(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def write_categories_report(path: Path, coverage: dict, sanga_counts: pd.DataFrame) -> None:
+def _usage_section(usage: list[UsageRow], retired: list[UsageRow], at_risk: dict[str, float]) -> list[str]:
+    lines = [
+        "## 업태 코드 사용 시기 (자동 감사)",
+        "",
+        "인허가 업태는 시간이 지나며 폐지된다. 폐지된 업태를 한 묶음에 그대로 두면 코호트 앞부분 표본만으로",
+        f"생존률을 내게 되므로, 매 실행마다 검출한다(코호트 마지막 3년 신규 등록 {RETIRED_MAX_RECENT}건 미만 = 사실상 폐지).",
+        "",
+    ]
+    if retired:
+        frame = pd.DataFrame(
+            [
+                {
+                    "업태": r.business_type,
+                    "묶음": r.category,
+                    "전체": r.total,
+                    "코호트": r.cohort,
+                    "최근 3년": r.recent,
+                    "사용 연도": f"{r.first_year}~{r.last_year}",
+                }
+                for r in retired
+            ]
+        )
+        lines += ["**폐지된 업태**", "", md_table(frame), ""]
+    else:
+        lines += ["폐지된 업태 없음.", ""]
+    if at_risk:
+        rows = sorted(at_risk.items(), key=lambda kv: -kv[1])
+        frame = pd.DataFrame([{"묶음": c, "폐지 업태에서 온 코호트 비율": f"{share:.1%}"} for c, share in rows])
+        lines += [
+            "**영향받는 묶음** (비율이 높을수록 그 묶음의 생존률을 믿기 어렵다)",
+            "",
+            md_table(frame),
+            "",
+        ]
+    lines += ["전체 업태별 사용 현황", "", md_table(pd.DataFrame([
+        {
+            "업태": r.business_type,
+            "묶음": r.category,
+            "전체": r.total,
+            "코호트": r.cohort,
+            "최근 3년": r.recent,
+            "사용 연도": f"{r.first_year}~{r.last_year}",
+        }
+        for r in usage
+    ])), ""]
+    return lines
+
+
+def write_categories_report(
+    path: Path,
+    coverage: dict,
+    sanga_counts: pd.DataFrame,
+    *,
+    usage: list[UsageRow] | None = None,
+    retired: list[UsageRow] | None = None,
+    at_risk: dict[str, float] | None = None,
+) -> None:
     counts: pd.DataFrame = coverage["counts"]
     lines = [
         "# 업종 공통 분류 (2주 차 초안)",
@@ -124,6 +181,21 @@ def _examples(sgg: pd.DataFrame, min_n: int) -> list[str]:
     return lines
 
 
+def _audit_warning(retired: list[UsageRow], at_risk: dict[str, float]) -> list[str]:
+    if not retired and not at_risk:
+        return []
+    lines = ["> **업태 코드 감사**", ">"]
+    if retired:
+        names = ", ".join(f"`{r.business_type}`(최근 3년 {r.recent:,}건)" for r in retired)
+        lines.append(f"> 코호트 후반에 신규 등록이 끊긴 업태: {names}.")
+    if at_risk:
+        worst = sorted(at_risk.items(), key=lambda kv: -kv[1])
+        names = ", ".join(f"{c} {share:.0%}" for c, share in worst)
+        lines.append(f"> 코호트가 폐지 업태에서 온 비율: {names}. 비율이 높은 묶음은 생존률을 그대로 믿으면 안 된다.")
+    lines += ["> 자세한 내용은 `reports/categories.md`의 '업태 코드 사용 시기'.", ""]
+    return lines
+
+
 def write_survival_report(
     path: Path,
     *,
@@ -137,6 +209,8 @@ def write_survival_report(
     sgg: pd.DataFrame,
     sido_small: int,
     sgg_small: int,
+    retired: list[UsageRow] | None = None,
+    at_risk: dict[str, float] | None = None,
 ) -> None:
     nation = _rate_cols(nation).sort_values("surv_3y", ascending=False)
     sido = _rate_cols(sido)
@@ -173,6 +247,7 @@ def write_survival_report(
         "",
         md_table(nation, {"category": "업종", "n": "n", "surv_1y": "1년 생존", "surv_3y": "3년 생존"}),
         "",
+        *_audit_warning(retired or [], at_risk or {}),
         "## 시도 × 업종 3년 생존률",
         "",
     ]

@@ -72,3 +72,45 @@ def test_verify_needs_parseable_address_for_local_lookup() -> None:
     assert result["level"] == "전국"
     assert result["sido"] == ""
     assert result["grade"] == "주의"
+
+
+def test_explain_does_not_claim_sgg_when_falling_back_to_sido() -> None:
+    from src.scoring.catalog import explain
+
+    text = explain(
+        {
+            "sido": "전라남도",
+            "sgg": "진도군",
+            "category": "일식",
+            "level": "시도",
+            "n": 361,
+            "surv_1y": 0.9,
+            "surv_3y": 0.751,
+            "nation_3y": 0.708,
+            "grade": "주의",
+        }
+    )
+
+    assert "진도군" not in text
+    assert text.startswith("전라남도 일식은")
+
+
+def test_explain_national_fallback_names_the_requested_place() -> None:
+    from src.scoring.catalog import explain
+
+    text = explain(
+        {
+            "sido": "",
+            "sgg": "",
+            "category": "카페",
+            "level": "전국",
+            "n": 121698,
+            "surv_1y": 0.877,
+            "surv_3y": 0.646,
+            "nation_3y": 0.646,
+            "grade": "주의",
+        }
+    )
+
+    assert "전국보다" not in text
+    assert "표본이 부족" in text

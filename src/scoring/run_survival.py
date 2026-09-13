@@ -13,6 +13,7 @@ from src.eda.coords import parse_sido_sgg_series
 from src.eda.history import parse_license_date
 from src.eda.paths import LICENSE_GENERAL_PARQUET, LICENSE_REST_PARQUET, SANGA_FOOD_PARQUET
 from src.scoring import paths
+from src.scoring.audit import categories_at_risk, retired_types, usage_by_type
 from src.scoring.categories import EXCLUDE, map_license, map_sanga
 from src.scoring.report_survival import write_categories_report, write_survival_report
 from src.scoring.survival import CohortSpec, build_cohort, normalize_sido, survival_table
@@ -82,6 +83,11 @@ def main() -> None:
     coverage = category_coverage(prepared)
     sanga_counts = sanga_coverage()
 
+    mapped = prepared[prepared["category"].notna() & (prepared["category"] != EXCLUDE)]
+    usage = usage_by_type(mapped, SPEC.opened_from, SPEC.opened_to)
+    retired = retired_types(usage)
+    at_risk = categories_at_risk(usage)
+
     cohort, dropped = build_cohort(prepared, SPEC)
     no_region = cohort["sido"] == ""
     dropped["region_unparsed"] = int(no_region.sum())
@@ -95,7 +101,7 @@ def main() -> None:
     sido.to_parquet(paths.SURVIVAL_SIDO_PARQUET, index=False)
     sgg.to_parquet(paths.SURVIVAL_SGG_PARQUET, index=False)
 
-    write_categories_report(paths.CATEGORIES_REPORT_MD, coverage, sanga_counts)
+    write_categories_report(paths.CATEGORIES_REPORT_MD, coverage, sanga_counts, usage=usage, retired=retired, at_risk=at_risk)
     write_survival_report(
         paths.SURVIVAL_REPORT_MD,
         spec=SPEC,
@@ -108,8 +114,14 @@ def main() -> None:
         sgg=sgg,
         sido_small=sido_small,
         sgg_small=sgg_small,
+        retired=retired,
+        at_risk=at_risk,
     )
     print(f"cohort={len(cohort):,} nation={len(nation)} sido={len(sido)} sgg={len(sgg)} (sgg n<{MIN_N}: {sgg_small})")
+    if retired:
+        print("폐지된 업태: " + ", ".join(f"{r.business_type}(최근 {r.recent})" for r in retired))
+    if at_risk:
+        print("영향받는 묶음: " + ", ".join(f"{c} {share:.0%}" for c, share in sorted(at_risk.items(), key=lambda kv: -kv[1])))
     print(f"wrote {paths.SURVIVAL_REPORT_MD.name}, {paths.CATEGORIES_REPORT_MD.name}")
 
 

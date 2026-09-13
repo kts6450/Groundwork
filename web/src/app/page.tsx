@@ -9,8 +9,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 export default function HomePage() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [catalogError, setCatalogError] = useState("");
-  const [address, setAddress] = useState(EXAMPLES[0].address);
-  const [businessType, setBusinessType] = useState(EXAMPLES[0].business_type);
+  const [address, setAddress] = useState<string>(EXAMPLES[0].address);
+  const [businessType, setBusinessType] = useState<string>(EXAMPLES[0].business_type);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(0);
