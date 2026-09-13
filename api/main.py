@@ -14,18 +14,25 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import pandas as pd
+
 from src.branding.generate import generate_brand
+from src.monitor.changes import compare, monthly_series
+from src.scoring.paths import TIMELINE_PARQUET
 from src.concept.generate import generate_concept
 from src.scoring.catalog import license_choices, nation_rates
 from src.scoring.verify import SurvivalTables, load_tables, verify
 
 tables: SurvivalTables | None = None
+timeline: pd.DataFrame | None = None
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    global tables
+    global tables, timeline
     tables = load_tables()
+    if TIMELINE_PARQUET.exists():
+        timeline = pd.read_parquet(TIMELINE_PARQUET)
     yield
 
 
@@ -41,6 +48,16 @@ app.add_middleware(
 class VerifyIn(BaseModel):
     address: str = Field(min_length=1)
     business_type: str = Field(min_length=1)
+
+
+class ChangesIn(BaseModel):
+    """저장된 프로젝트의 위치·업종과 두 시점. 저장소가 없어 값을 직접 받는다."""
+
+    sido: str = Field(min_length=1)
+    sgg: str = Field(min_length=1)
+    category: str = Field(min_length=1)
+    computed_at: str = Field(min_length=7)
+    as_of: str = Field(min_length=7)
 
 
 class ConceptIn(VerifyIn):
@@ -66,6 +83,22 @@ def post_verify(body: VerifyIn) -> dict:
     if tables is None:
         raise HTTPException(503, "tables not loaded")
     return verify(body.address.strip(), body.business_type.strip(), tables)
+
+
+@app.post("/changes")
+def post_changes(body: ChangesIn) -> dict:
+    """5단계. 저장 시점 이후 같은 업종이 몇 곳 열고 닫았는지."""
+    if timeline is None:
+        raise HTTPException(503, "timeline not built; run python -m src.monitor.run_timeline")
+    try:
+        result = compare(timeline, body.sido, body.sgg, body.category, body.computed_at, body.as_of)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if "error" not in result:
+        result["monthly"] = monthly_series(
+            timeline, body.sido, body.sgg, body.category, body.computed_at, body.as_of
+        )
+    return result
 
 
 @app.post("/plan")

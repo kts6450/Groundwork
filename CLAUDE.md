@@ -41,9 +41,10 @@
 
 **3주 차. 검증기(주소·업태 → 합격/주의/위험)가 끝에서 끝까지 동작한다.**
 
-- 완료: EDA, 생존표, 백테스트, 검증기, 2단계 컨셉·메뉴, 3단계 브랜드명·로고, FastAPI, Next.js 화면
+- 완료: EDA, 생존표, 백테스트, 검증기, 2단계 컨셉·메뉴, 3단계 브랜드명·로고, 5단계 상권 변화, FastAPI, Next.js 화면
+- 5단계는 계산만 된다. 프로젝트 저장(Supabase)이 없어 위치·업종·시점을 요청으로 직접 받는다
 - 백테스트 결과: 합격 등급 3년 생존 70.1%, 위험 59.6%. 격차 10.6%p (2020~2022 개업 286,800곳)
-- **다음 할 일:** 화면에 2·3단계 결과 붙이기(컨셉·메뉴·로고). 그다음 지도·업종 분포도
+- **다음 할 일:** 사람 손이 필요한 것들. ANTHROPIC_API_KEY를 `.env`에 넣어 LLM 경로 확인, Kakao 지도 키, Supabase 프로젝트, 행정동 경계 파일
 
 ### 실행
 
@@ -52,6 +53,7 @@
 python -m src.eda            # 처음 한 번
 python -m src.scoring.run_survival
 python -m src.scoring.run_backtest
+python -m src.monitor.run_timeline   # 5단계 개·폐업 집계
 
 # 서버 (터미널 두 개)
 python -m uvicorn api.main:app --port 8000
@@ -78,7 +80,7 @@ cd web; npm run dev          # http://localhost:3000
 │  ├─ scoring/     # 1단계 업종 매핑·생존표·백테스트·검증기
 │  ├─ concept/     # 2단계 컨셉·메뉴 (LLM, 키 없으면 목업)
 │  ├─ branding/    # 3단계 브랜드명·팔레트·로고 SVG
-│  └─ monitor/     # 5단계 (10주차~, 아직 없음)
+│  └─ monitor/     # 5단계 개업 이후 상권 변화
 ├─ api/            # FastAPI. /catalog, /verify
 ├─ web/            # Next.js 검증 화면 (남음)
 ├─ reports/        # eda.md, categories.md, survival.md, backtest.md
