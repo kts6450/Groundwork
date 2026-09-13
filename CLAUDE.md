@@ -33,7 +33,7 @@
 | 백엔드 | FastAPI `api/` | 3주차 (화면용으로 당김) |
 | 프론트 | Next.js `web/` (지도는 나중에) | 3주차 |
 | 인증·DB | Supabase | 아직 |
-| LLM | Claude API | 다음 |
+| LLM | Claude API (`claude-opus-5`) | 2단계부터 |
 
 `src/`는 FastAPI·Next.js를 모른다. 로직은 화면 없이 함수로 돌아가야 한다.
 
@@ -41,9 +41,9 @@
 
 **3주 차. 검증기(주소·업태 → 합격/주의/위험)가 끝에서 끝까지 동작한다.**
 
-- 완료: EDA, 업종 매핑, 시군구×업종 생존표, 백테스트, 검증기, FastAPI, Next.js 화면
+- 완료: EDA, 업종 매핑, 시군구×업종 생존표, 백테스트, 검증기, 2단계 컨셉·메뉴, FastAPI, Next.js 화면
 - 백테스트 결과: 합격 등급 3년 생존 70.1%, 위험 59.6%. 격차 10.6%p (2020~2022 개업 286,800곳)
-- **다음 할 일:** 2단계 컨셉·메뉴 생성(LLM). 그다음 3단계 브랜드명·로고 SVG
+- **다음 할 일:** 3단계 브랜드명·로고 SVG(`src/branding/`). 그다음 화면에 컨셉 결과 붙이기
 
 ### 실행
 
@@ -76,7 +76,7 @@ cd web; npm run dev          # http://localhost:3000
 ├─ src/            # 분석·생성 로직 (화면·API 독립)
 │  ├─ eda/         # EDA 스크립트
 │  ├─ scoring/     # 1단계 업종 매핑·생존표·백테스트·검증기
-│  ├─ concept/     # 2단계 컨셉·메뉴 (다음 할 일)
+│  ├─ concept/     # 2단계 컨셉·메뉴 (LLM, 키 없으면 목업)
 │  ├─ branding/    # 3단계 (6주차~, 아직 없음)
 │  └─ monitor/     # 5단계 (10주차~, 아직 없음)
 ├─ api/            # FastAPI. /catalog, /verify
@@ -109,6 +109,7 @@ cd web; npm run dev          # http://localhost:3000
 - 스크립트는 다시 실행해도 같은 결과가 나오게 작성
 - `src/`에 FastAPI·Next.js 관련 코드를 두지 않는다
 - 외부 키(지도·LLM·Supabase)는 `.env`로 빼고, 키가 없어도 목업이 뜨게 만든다
+- LLM이 만든 결과라도 **근거 숫자는 코드가 채운다**. 모델이 통계를 지어내면 이 서비스의 차별점이 무너진다
 - 업종 매핑을 바꾸면 `run_survival` → `run_backtest` 순서로 다시 돌린다. 백테스트 근거 JSON을 검증기가 읽는다
 - 인허가 업태 코드는 중간에 폐지된다. 새 묶음을 만들기 전에 `reports/categories.md`의 '업태 코드 사용 시기'를 확인한다
 

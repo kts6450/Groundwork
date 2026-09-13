@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.concept.generate import generate_concept
 from src.scoring.catalog import license_choices, nation_rates
 from src.scoring.verify import SurvivalTables, load_tables, verify
 
@@ -41,6 +42,12 @@ class VerifyIn(BaseModel):
     business_type: str = Field(min_length=1)
 
 
+class ConceptIn(VerifyIn):
+    budget_krw: int | None = Field(default=None, ge=0)
+    experience: str = Field(default="none")
+    preferences: list[str] = Field(default_factory=list)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
@@ -58,3 +65,18 @@ def post_verify(body: VerifyIn) -> dict:
     if tables is None:
         raise HTTPException(503, "tables not loaded")
     return verify(body.address.strip(), body.business_type.strip(), tables)
+
+
+@app.post("/concept")
+def post_concept(body: ConceptIn) -> dict:
+    """2단계. 검증부터 다시 하고 그 결과를 근거로 컨셉을 만든다."""
+    if tables is None:
+        raise HTTPException(503, "tables not loaded")
+    verdict = verify(body.address.strip(), body.business_type.strip(), tables)
+    concept = generate_concept(
+        verdict,
+        budget_krw=body.budget_krw,
+        experience=body.experience,
+        preferences=body.preferences,
+    )
+    return {"verdict": verdict, "concept": concept}
