@@ -156,8 +156,8 @@ export default function HomePage() {
       {catalog ? <NationChart rows={catalog.nation} /> : null}
 
       <footer className="mt-20 text-xs leading-6 text-[#6e675c]">
-        인허가 2015.01–2023.06 개업, 기준일 2026.09.09. n&lt;10 칸은 시도·전국으로 내려간다. 치킨
-        업태는 2016년 이후 신규가 거의 없어 표본이 약하다. AI 해설은 아직 없다.
+        인허가 2015.01–2023.06 개업, 기준일 2026.09.09. n&lt;10 칸은 시도·전국으로 내려간다.
+        통닭(치킨) 업태가 2016년경 폐지돼 치킨은 호프와 한 묶음이다. 매출이 아니라 개·폐 이력만 본다.
       </footer>
     </main>
   );
