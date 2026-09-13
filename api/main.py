@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.branding.generate import generate_brand
 from src.concept.generate import generate_concept
 from src.scoring.catalog import license_choices, nation_rates
 from src.scoring.verify import SurvivalTables, load_tables, verify
@@ -65,6 +66,22 @@ def post_verify(body: VerifyIn) -> dict:
     if tables is None:
         raise HTTPException(503, "tables not loaded")
     return verify(body.address.strip(), body.business_type.strip(), tables)
+
+
+@app.post("/plan")
+def post_plan(body: ConceptIn) -> dict:
+    """1~3단계를 한 번에. 검증 → 컨셉 → 브랜딩."""
+    if tables is None:
+        raise HTTPException(503, "tables not loaded")
+    verdict = verify(body.address.strip(), body.business_type.strip(), tables)
+    concept = generate_concept(
+        verdict,
+        budget_krw=body.budget_krw,
+        experience=body.experience,
+        preferences=body.preferences,
+    )
+    brand = generate_brand(concept, verdict.get("category", "기타"), preferences=body.preferences)
+    return {"verdict": verdict, "concept": concept, "brand": brand}
 
 
 @app.post("/concept")
