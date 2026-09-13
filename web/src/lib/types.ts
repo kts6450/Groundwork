@@ -43,3 +43,43 @@ export type VerifyResult = VerifyOk | VerifyErr;
 export function isOk(result: VerifyResult): result is VerifyOk {
   return !("error" in result);
 }
+
+export type MenuItem = {
+  name: string;
+  price_krw: number;
+  role: "signature" | "core" | "side";
+};
+
+export type ConceptOk = {
+  source: "llm" | "mock";
+  concept: {
+    one_liner: string;
+    target: string;
+    differentiator: string;
+    tone: string[];
+  };
+  menu: MenuItem[];
+  price_band: { low_krw: number; high_krw: number; average_krw: number };
+  grounds: string[];
+  note?: string;
+};
+
+export type BrandName = { name: string; reason: string; risk: string };
+
+export type BrandOk = {
+  source: "llm" | "mock";
+  names: BrandName[];
+  palette: { primary: string; secondary: string; background: string };
+  logo_svg: string;
+  note?: string;
+};
+
+export type PlanResult = {
+  verdict: VerifyResult;
+  concept: ConceptOk | VerifyErr;
+  brand: BrandOk | VerifyErr;
+};
+
+export function hasPlan(value: ConceptOk | BrandOk | VerifyErr): value is ConceptOk & BrandOk {
+  return !("error" in value);
+}

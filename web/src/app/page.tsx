@@ -1,9 +1,10 @@
 "use client";
 
 import { NationChart } from "@/components/NationChart";
+import { BrandPanel, ConceptPanel } from "@/components/PlanPanel";
 import { ResultPanel } from "@/components/ResultPanel";
 import { EXAMPLES } from "@/lib/examples";
-import type { Catalog, VerifyResult } from "@/lib/types";
+import { isOk, type Catalog, type PlanResult, type VerifyResult } from "@/lib/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 export default function HomePage() {
@@ -12,6 +13,8 @@ export default function HomePage() {
   const [address, setAddress] = useState<string>(EXAMPLES[0].address);
   const [businessType, setBusinessType] = useState<string>(EXAMPLES[0].business_type);
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [plan, setPlan] = useState<PlanResult | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(0);
 
@@ -44,6 +47,7 @@ export default function HomePage() {
     event.preventDefault();
     setLoading(true);
     setResult(null);
+    setPlan(null);
     try {
       const res = await fetch("/backend/verify", {
         method: "POST",
@@ -55,6 +59,20 @@ export default function HomePage() {
       setShake((n) => n + 1);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onPlan() {
+    setPlanLoading(true);
+    try {
+      const res = await fetch("/backend/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address, business_type: businessType }),
+      });
+      setPlan((await res.json()) as PlanResult);
+    } finally {
+      setPlanLoading(false);
     }
   }
 
@@ -152,6 +170,27 @@ export default function HomePage() {
           <ResultPanel result={result} loading={loading} />
         </div>
       </section>
+
+      {result && isOk(result) && !plan ? (
+        <div className="mt-8 text-center">
+          <button
+            type="button"
+            onClick={onPlan}
+            disabled={planLoading}
+            className="rounded-full border border-[#12100c] px-8 py-3 font-display text-lg transition hover:bg-[#12100c] hover:text-[#f3ead7] disabled:opacity-50"
+          >
+            {planLoading ? "기획안 만드는 중…" : "이 자리로 기획안 만들기"}
+          </button>
+          <p className="mt-3 text-xs text-[#7a7266]">컨셉·메뉴·가격대와 이름·로고 초안을 만든다.</p>
+        </div>
+      ) : null}
+
+      {plan ? (
+        <>
+          <ConceptPanel concept={plan.concept} />
+          <BrandPanel brand={plan.brand} />
+        </>
+      ) : null}
 
       {catalog ? <NationChart rows={catalog.nation} /> : null}
 
