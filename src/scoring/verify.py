@@ -12,6 +12,7 @@ import pandas as pd
 
 from src.eda.coords import parse_sido_sgg
 from src.scoring.categories import EXCLUDE, map_license
+from src.scoring.evidence import evidence_sentence, load_evidence
 from src.scoring.paths import SURVIVAL_NATION_PARQUET, SURVIVAL_SGG_PARQUET, SURVIVAL_SIDO_PARQUET
 from src.scoring.survival import normalize_sido
 
@@ -94,6 +95,7 @@ def verify(address: str, business_type: str, tables: SurvivalTables) -> dict:
     from src.scoring.catalog import explain
 
     payload["reason"] = explain(payload)
+    payload["evidence"] = evidence_sentence(payload["grade"], load_evidence())
     return payload
 
 

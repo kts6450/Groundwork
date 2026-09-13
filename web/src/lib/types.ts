@@ -28,6 +28,7 @@ export type VerifyOk = {
   diff_3y: number;
   grade: "합격" | "주의" | "위험";
   reason: string;
+  evidence?: string;
 };
 
 export type VerifyErr = {

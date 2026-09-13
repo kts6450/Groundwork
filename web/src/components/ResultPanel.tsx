@@ -88,6 +88,11 @@ export function ResultPanel({
         <CountUp value={diff} suffix="%p" />
       </p>
       <p className="mt-5 max-w-md text-sm leading-7 text-[#4f4a42]">{result.reason}</p>
+      {result.evidence ? (
+        <p className="mt-4 max-w-md border-l-2 border-[#c4841d]/50 pl-4 text-sm leading-7 text-[#6e675c]">
+          {result.evidence}
+        </p>
+      ) : null}
     </div>
   );
 }
