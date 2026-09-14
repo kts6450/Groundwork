@@ -3,7 +3,8 @@
 각 단계는 아래에 정의한 JSON 형식만 주고받는다. 앞 단계의 출력이 다음 단계의 입력이다.
 분석·생성 로직(`src/`)은 이 형식만 알고, FastAPI(`api/`)와 Next.js(`web/`)는 이 형식을 그대로 전달한다.
 
-**구현 상태**: 1단계(검증)는 동작한다. 2·3단계는 형식만 정의돼 있고 구현 중이다. 6·7단계는 아직 없다.
+**구현 상태**: 1~7단계가 모두 동작한다. 2·3·7-2는 `ANTHROPIC_API_KEY`가 있으면 LLM으로,
+없으면 규칙 기반 목업으로 같은 형식을 만든다. 저장(6번)은 SQLite이고 Supabase로 갈아끼울 자리다.
 
 ## 0. 공통 규칙
 
@@ -86,7 +87,7 @@
 
 ## 3. 컨셉·메뉴·가격대 (2단계)
 
-`src/concept/` → `POST /backend/concept` (구현 중)
+`src/concept/` → `POST /backend/concept`
 
 ### 입력
 
@@ -127,7 +128,7 @@
 
 ## 4. 브랜드명·로고 (3단계)
 
-`src/branding/` → `POST /backend/brand` (아직 없음)
+`src/branding/` → `POST /backend/plan`이 1~3단계를 한 번에 준다
 
 ### 입력
 
@@ -159,11 +160,16 @@
 { "verdict": {}, "concept": {}, "brand": {} }
 ```
 
-현재 화면은 1단계 검증 결과만 표시한다. 지도와 업종 분포도는 아직 없다.
+화면은 검증 → 기획안 → 개업 이후 순서로 펼쳐진다. 지도와 지역별 업종 분포도는 아직 없다(Kakao 키 필요).
 
 ## 6. 사용자 프로젝트 (저장 객체)
 
-4단계 결과를 한 덩어리로 저장한다. 7단계(개업 이후)의 입력이다. **아직 구현하지 않았다.**
+4단계 결과를 한 덩어리로 저장한다. 7단계(개업 이후)의 입력이다.
+
+`src/projects/store.py` → `POST /backend/projects`, `GET /backend/projects?user_id=`,
+`GET /backend/projects/{project_id}`. 지금은 SQLite 한 파일(`data/processed/projects.sqlite3`)이고,
+Supabase로 옮길 때 이 모듈의 함수 시그니처만 지키면 바깥 코드는 바뀌지 않는다.
+로그인이 없어 `user_id`는 호출자가 넘기는 문자열이다.
 
 ### 스키마
 
@@ -194,23 +200,30 @@
 { "project_id": "uuid", "as_of": "2027-03-01" }
 ```
 
+`project_id` 대신 `sido`·`sgg`·`category`·`computed_at`을 직접 넘겨도 된다.
+
 #### 출력
 
 ```json
 {
-  "from": "2026-09-13",
-  "to": "2027-03-01",
-  "same_category_opened": 4,
-  "same_category_closed": 2,
-  "surv_3y_then": 0.571,
-  "surv_3y_now": 0.559,
-  "grade_then": "위험",
-  "grade_now": "위험",
-  "message": "마포구 카페가 같은 기간 4곳 열고 2곳 닫았다."
+  "from": "2024-01",
+  "to": "2026-09",
+  "sido": "서울특별시",
+  "sgg": "마포구",
+  "category": "카페",
+  "same_category_opened": 398,
+  "same_category_closed": 602,
+  "net_change": -204,
+  "open_count_then": 1291,
+  "open_count_now": 1087,
+  "message": "마포구 카페가 이 기간에 398곳 열고 602곳 닫았다. 경쟁 상대가 204곳 줄었다.",
+  "monthly": [{ "month": "2024-02", "opened": 12, "closed": 18 }]
 }
 ```
 
-시점 필터(`src/eda/history.py`의 `open_at`)가 이 비교의 기반이다. 같은 함수가 백테스트에도 쓰인다.
+생존률은 고정 코호트로 계산한 값이라 확인 시점에 따라 바뀌지 않는다. 그래서 변화는
+월별 개·폐업 집계(`src/monitor/timeline.py`)로 답한다. 집계 시작 이전에 열어 살아 있던
+점포는 기준선 행에 담아, 누적 영업 수가 음수로 내려가지 않게 한다.
 
 ### 7-2. 브랜드 자산 생성
 
@@ -220,12 +233,13 @@
 { "project_id": "uuid", "asset": "seasonal_menu", "context": "겨울 신메뉴 2종" }
 ```
 
-`asset`: `seasonal_menu` / `sns_post` / `event_banner`
+`asset`: `seasonal_menu` / `sns_post` / `event_banner`. `src/monitor/assets.py` → `POST /backend/assets`
 
 #### 출력
 
 ```json
-{ "source": "llm", "asset": "seasonal_menu", "title": "겨울 한정", "body": "…", "svg": "<svg>…</svg>" }
+{ "source": "llm", "asset": "seasonal_menu", "title": "겨울 한정", "body": "…", "svg": "<svg viewBox=\"0 0 320 180\">…</svg>" }
 ```
 
 저장된 브랜드 정체성(6번의 `brand`)을 프롬프트에 그대로 넣어 톤을 유지한다.
+SVG는 `src/branding/svg.py`의 `sanitize_svg`를 통과한 것만 나간다.

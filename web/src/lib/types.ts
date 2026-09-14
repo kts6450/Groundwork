@@ -83,3 +83,40 @@ export type PlanResult = {
 export function hasPlan(value: ConceptOk | BrandOk | VerifyErr): value is ConceptOk & BrandOk {
   return !("error" in value);
 }
+
+export type ProjectSummary = {
+  project_id: string;
+  created_at: string;
+  computed_at: string;
+  sido: string;
+  sgg: string;
+  address: string;
+  category: string;
+  business_type: string;
+};
+
+export type MonthPoint = { month: string; opened: number; closed: number };
+
+export type ChangesOk = {
+  from: string;
+  to: string;
+  sido: string;
+  sgg: string;
+  category: string;
+  same_category_opened: number;
+  same_category_closed: number;
+  net_change: number;
+  open_count_then: number;
+  open_count_now: number;
+  message: string;
+  monthly: MonthPoint[];
+};
+
+export type AssetOk = {
+  source: "llm" | "mock";
+  asset: string;
+  title: string;
+  body: string;
+  svg: string;
+  note?: string;
+};

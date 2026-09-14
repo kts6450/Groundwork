@@ -1,10 +1,18 @@
 "use client";
 
 import { NationChart } from "@/components/NationChart";
+import { ChangesPanel } from "@/components/ChangesPanel";
 import { BrandPanel, ConceptPanel } from "@/components/PlanPanel";
 import { ResultPanel } from "@/components/ResultPanel";
 import { EXAMPLES } from "@/lib/examples";
-import { isOk, type Catalog, type PlanResult, type VerifyResult } from "@/lib/types";
+import {
+  isOk,
+  type AssetOk,
+  type Catalog,
+  type ChangesOk,
+  type PlanResult,
+  type VerifyResult,
+} from "@/lib/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 export default function HomePage() {
@@ -15,6 +23,11 @@ export default function HomePage() {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [plan, setPlan] = useState<PlanResult | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [changes, setChanges] = useState<ChangesOk | null>(null);
+  const [changesLoading, setChangesLoading] = useState(false);
+  const [asset, setAsset] = useState<AssetOk | null>(null);
+  const [assetLoading, setAssetLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(0);
 
@@ -48,6 +61,9 @@ export default function HomePage() {
     setLoading(true);
     setResult(null);
     setPlan(null);
+    setProjectId(null);
+    setChanges(null);
+    setAsset(null);
     try {
       const res = await fetch("/backend/verify", {
         method: "POST",
@@ -59,6 +75,56 @@ export default function HomePage() {
       setShake((n) => n + 1);
     } finally {
       setLoading(false);
+    }
+  }
+
+  /** 저장한 뒤 그 프로젝트로 개업 이후 변화를 불러온다.
+   *  computed_at을 2년 전으로 두어 "열고 나서 어떻게 변했나"를 바로 보여준다. */
+  async function onTrack() {
+    setChangesLoading(true);
+    setAsset(null);
+    try {
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      const saved = await fetch("/backend/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: "demo",
+          address,
+          business_type: businessType,
+          computed_at: twoYearsAgo.toISOString().slice(0, 10),
+        }),
+      }).then((res) => res.json());
+
+      setProjectId(saved.project_id);
+      const res = await fetch("/backend/changes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: saved.project_id,
+          as_of: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      const payload = (await res.json()) as ChangesOk;
+      if (!("error" in payload)) setChanges(payload);
+    } finally {
+      setChangesLoading(false);
+    }
+  }
+
+  async function onAsset(kind: string) {
+    if (!projectId) return;
+    setAssetLoading(true);
+    try {
+      const res = await fetch("/backend/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId, asset: kind, context: "" }),
+      });
+      setAsset((await res.json()) as AssetOk);
+    } finally {
+      setAssetLoading(false);
     }
   }
 
@@ -190,6 +256,24 @@ export default function HomePage() {
           <ConceptPanel concept={plan.concept} />
           <BrandPanel brand={plan.brand} />
         </>
+      ) : null}
+
+      {plan && !changes ? (
+        <div className="mt-8 text-center">
+          <button
+            type="button"
+            onClick={onTrack}
+            disabled={changesLoading}
+            className="rounded-full border border-[#12100c] px-8 py-3 font-display text-lg transition hover:bg-[#12100c] hover:text-[#f3ead7] disabled:opacity-50"
+          >
+            {changesLoading ? "불러오는 중…" : "2년 전에 열었다면, 그 뒤 상권 변화"}
+          </button>
+          <p className="mt-3 text-xs text-[#7a7266]">기획안을 저장하고 같은 업종이 몇 곳 열고 닫았는지 본다.</p>
+        </div>
+      ) : null}
+
+      {changes ? (
+        <ChangesPanel changes={changes} onAsset={onAsset} asset={asset} assetLoading={assetLoading} />
       ) : null}
 
       {catalog ? <NationChart rows={catalog.nation} /> : null}
