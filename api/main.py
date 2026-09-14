@@ -19,6 +19,7 @@ import pandas as pd
 from src.branding.generate import generate_brand
 from src.monitor.assets import generate_asset
 from src.monitor.changes import compare, monthly_series
+from src.monitor.distribution import describe as describe_distribution, distribution
 from src.projects.store import ProjectError, get_project, list_projects, save_project
 from src.scoring.paths import TIMELINE_PARQUET
 from src.concept.generate import generate_concept
@@ -134,6 +135,16 @@ def get_one_project(project_id: str) -> dict:
     if project is None:
         raise HTTPException(404, "project not found")
     return project
+
+
+@app.get("/distribution")
+def get_distribution(sido: str, sgg: str) -> dict:
+    """이 시군구에 어떤 업종이 몰려 있는지. 전국 구성비 대비 배수."""
+    if timeline is None:
+        raise HTTPException(503, "timeline not built; run python -m src.monitor.run_timeline")
+    result = distribution(timeline, sido.strip(), sgg.strip())
+    result["summary"] = describe_distribution(result)
+    return result
 
 
 @app.post("/changes")

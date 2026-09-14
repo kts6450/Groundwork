@@ -21,6 +21,7 @@ def _to_month(value: str) -> str:
 
 
 def _particle(word: str) -> str:
+    """받침이 있으면 '이', 없으면 '가'. distribution.py도 쓴다."""
     if not word:
         return "가"
     code = ord(word[-1])

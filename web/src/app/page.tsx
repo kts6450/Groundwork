@@ -2,6 +2,7 @@
 
 import { NationChart } from "@/components/NationChart";
 import { ChangesPanel } from "@/components/ChangesPanel";
+import { DistributionPanel } from "@/components/DistributionPanel";
 import { BrandPanel, ConceptPanel } from "@/components/PlanPanel";
 import { ResultPanel } from "@/components/ResultPanel";
 import { EXAMPLES } from "@/lib/examples";
@@ -10,6 +11,7 @@ import {
   type AssetOk,
   type Catalog,
   type ChangesOk,
+  type DistributionOk,
   type PlanResult,
   type VerifyResult,
 } from "@/lib/types";
@@ -25,6 +27,7 @@ export default function HomePage() {
   const [planLoading, setPlanLoading] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [changes, setChanges] = useState<ChangesOk | null>(null);
+  const [dist, setDist] = useState<DistributionOk | null>(null);
   const [changesLoading, setChangesLoading] = useState(false);
   const [asset, setAsset] = useState<AssetOk | null>(null);
   const [assetLoading, setAssetLoading] = useState(false);
@@ -63,6 +66,7 @@ export default function HomePage() {
     setPlan(null);
     setProjectId(null);
     setChanges(null);
+    setDist(null);
     setAsset(null);
     try {
       const res = await fetch("/backend/verify", {
@@ -73,6 +77,13 @@ export default function HomePage() {
       const payload = (await res.json()) as VerifyResult;
       setResult(payload);
       setShake((n) => n + 1);
+      if (isOk(payload)) {
+        const query = new URLSearchParams({ sido: payload.sido, sgg: payload.sgg });
+        fetch(`/backend/distribution?${query}`)
+          .then((r) => r.json())
+          .then((d) => setDist("error" in d ? null : (d as DistributionOk)))
+          .catch(() => setDist(null));
+      }
     } finally {
       setLoading(false);
     }
@@ -236,6 +247,8 @@ export default function HomePage() {
           <ResultPanel result={result} loading={loading} />
         </div>
       </section>
+
+      {dist ? <DistributionPanel data={dist} /> : null}
 
       {result && isOk(result) && !plan ? (
         <div className="mt-8 text-center">

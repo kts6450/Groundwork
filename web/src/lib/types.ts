@@ -120,3 +120,21 @@ export type AssetOk = {
   svg: string;
   note?: string;
 };
+
+export type DistributionRow = {
+  category: string;
+  open_count: number;
+  share: number;
+  nation_share: number;
+  ratio: number;
+};
+
+export type DistributionOk = {
+  sido: string;
+  sgg: string;
+  total: number;
+  rows: DistributionRow[];
+  most_dense: DistributionRow | null;
+  least_dense: DistributionRow | null;
+  summary: string;
+};
